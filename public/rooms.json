@@ -1,0 +1,84 @@
+{
+  "floor1": [
+    {
+      "id": "conf-room-1",
+      "name": "Innovation Lab",
+      "x": 50,
+      "y": 100,
+      "width": 120,
+      "height": 80,
+      "capacity": 12,
+      "activityHeat": 0.7
+    },
+    {
+      "id": "conf-room-2", 
+      "name": "Strategy Hub",
+      "x": 200,
+      "y": 100,
+      "width": 100,
+      "height": 60,
+      "capacity": 8,
+      "activityHeat": 0.4
+    },
+    {
+      "id": "open-space-1",
+      "name": "Collaboration Zone",
+      "x": 320,
+      "y": 80,
+      "width": 200,
+      "height": 150,
+      "capacity": 25,
+      "activityHeat": 0.9
+    },
+    {
+      "id": "booth-1",
+      "name": "Focus Pod A",
+      "x": 100,
+      "y": 220,
+      "width": 40,
+      "height": 40,
+      "capacity": 2,
+      "activityHeat": 0.3
+    },
+    {
+      "id": "booth-2",
+      "name": "Focus Pod B", 
+      "x": 160,
+      "y": 220,
+      "width": 40,
+      "height": 40,
+      "capacity": 2,
+      "activityHeat": 0.8
+    },
+    {
+      "id": "lounge-1",
+      "name": "Community Lounge",
+      "x": 50,
+      "y": 300,
+      "width": 180,
+      "height": 100,
+      "capacity": 20,
+      "activityHeat": 0.6
+    },
+    {
+      "id": "kitchen-1",
+      "name": "Kitchen & Cafe",
+      "x": 350,
+      "y": 280,
+      "width": 140,
+      "height": 80,
+      "capacity": 15,
+      "activityHeat": 0.5
+    },
+    {
+      "id": "workspace-1",
+      "name": "Hot Desk Area",
+      "x": 250,
+      "y": 300,
+      "width": 80,
+      "height": 120,
+      "capacity": 10,
+      "activityHeat": 0.2
+    }
+  ]
+}
