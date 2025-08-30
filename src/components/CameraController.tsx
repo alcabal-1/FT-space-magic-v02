@@ -107,18 +107,18 @@ const CameraController: React.FC = () => {
     }
   };
   
-  // Handle focus changes
-  useEffect(() => {
-    const { position, target } = calculateCameraPositions(focusedFloor);
-    
-    if (focusedFloor === null) {
-      // Smooth transition to overview
-      animateCameraTo(position, target, 2.0, easeInOutQuart);
-    } else {
-      // Cinematic dolly zoom to floor
-      animateCameraTo(position, target, 1.5, easeInOutCubic);
-    }
-  }, [focusedFloor, floors]);
+  // Handle focus changes (disabled auto-animation for user control)
+  // useEffect(() => {
+  //   const { position, target } = calculateCameraPositions(focusedFloor);
+  //   
+  //   if (focusedFloor === null) {
+  //     // Smooth transition to overview
+  //     animateCameraTo(position, target, 2.0, easeInOutQuart);
+  //   } else {
+  //     // Cinematic dolly zoom to floor
+  //     animateCameraTo(position, target, 1.5, easeInOutCubic);
+  //   }
+  // }, [focusedFloor, floors]);
   
   // Animation loop
   useFrame((state, delta) => {
@@ -148,19 +148,8 @@ const CameraController: React.FC = () => {
           controlsRef.current.enabled = true;
         }
       }
-    } else {
-      // Subtle orbital drift when not animating
-      if (cameraMode === 'orbital' && controlsRef.current && !controlsRef.current.enabled) {
-        const time = state.clock.getElapsedTime() * 0.1;
-        const radius = camera.position.distanceTo(controlsRef.current.target);
-        const spherical = new Spherical();
-        spherical.setFromVector3(camera.position.clone().sub(controlsRef.current.target));
-        spherical.theta += Math.sin(time) * 0.01;
-        
-        const newPosition = new Vector3().setFromSpherical(spherical).add(controlsRef.current.target);
-        camera.position.copy(newPosition);
-      }
     }
+    // Orbital drift disabled - user has full camera control
   });
   
   return (

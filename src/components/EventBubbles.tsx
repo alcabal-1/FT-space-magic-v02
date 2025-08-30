@@ -13,12 +13,51 @@ import {
   Color,
   Vector3
 } from 'three';
+import { Text } from 'troika-three-text';
+import { extend } from '@react-three/fiber';
 import type { EventBubble } from '../types/tower';
-import { EVENT_COLORS } from '../types/tower';
+import { EVENT_COLORS, TOWER_CONFIG } from '../types/tower';
+import { useTower3DStore } from '../stores/tower3DStore';
+
+extend({ Text });
 
 interface EventBubblesProps {
   bubbles: EventBubble[];
 }
+
+// 3D Text Label Component
+const BubbleLabel: React.FC<{ 
+  bubble: EventBubble; 
+  position: [number, number, number];
+}> = ({ bubble, position }) => {
+  const groupRef = useRef<any>(null);
+  
+  // Manual billboard effect with smooth rotation
+  useFrame(({ camera }) => {
+    if (groupRef.current) {
+      groupRef.current.lookAt(camera.position);
+      // Prevent text from being upside down
+      groupRef.current.rotation.z = 0;
+    }
+  });
+  
+  const labelText = `${bubble.title} (${bubble.participants})`;
+  
+  return (
+    <group ref={groupRef} position={[position[0], position[1] + bubble.size + 10, position[2]]}>
+      <text
+        text={labelText}
+        fontSize={6}
+        color="white"
+        anchorX="center"
+        anchorY="bottom"
+        outlineWidth={0.2}
+        outlineColor="#000000"
+        maxWidth={50}
+      />
+    </group>
+  );
+};
 
 // Individual bubble component for detailed interactions
 const SingleEventBubble: React.FC<{ bubble: EventBubble; onClick?: () => void }> = ({ 
@@ -35,28 +74,29 @@ const SingleEventBubble: React.FC<{ bubble: EventBubble; onClick?: () => void }>
       const heartbeat = 1 + Math.sin(time * 4 + bubble.pulseIntensity * 10) * 0.1 * bubble.pulseIntensity;
       meshRef.current.scale.setScalar(heartbeat);
       
-      // Gentle floating motion
-      const floatY = Math.sin(time * 2 + bubble.position[0] * 0.01) * 2;
-      meshRef.current.position.setY(bubble.position[2] + floatY);
+      // Gentle floating motion (smaller amplitude to stay near floor)
+      const floatY = Math.sin(time * 2 + bubble.position[0] * 0.01) * 0.5;
+      meshRef.current.position.setY(bubble.position[1] + floatY);
     }
   });
   
   const bubbleColor = useMemo(() => new Color(bubble.color), [bubble.color]);
   
   return (
-    <mesh
-      ref={meshRef}
-      position={bubble.position}
-      onClick={onClick}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-      castShadow
-    >
+    <group>
+      <mesh
+        ref={meshRef}
+        position={bubble.position}
+        onClick={onClick}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        castShadow
+      >
       <sphereGeometry args={[bubble.size, 16, 12]} />
       <meshLambertMaterial
         color={bubbleColor}
         transparent
-        opacity={bubble.isActive ? 0.8 : 0.4}
+        opacity={0.7}
         emissive={bubbleColor}
         emissiveIntensity={hovered ? 0.3 : (bubble.isActive ? 0.1 : 0)}
       />
@@ -74,18 +114,9 @@ const SingleEventBubble: React.FC<{ bubble: EventBubble; onClick?: () => void }>
         </mesh>
       )}
       
-      {/* Event info on hover */}
-      {hovered && (
-        <mesh position={[bubble.size + 20, 10, 0]}>
-          <planeGeometry args={[60, 20]} />
-          <meshBasicMaterial
-            color="#1e293b"
-            transparent
-            opacity={0.9}
-          />
-        </mesh>
-      )}
-    </mesh>
+      </mesh>
+      <BubbleLabel bubble={bubble} position={bubble.position} />
+    </group>
   );
 };
 
@@ -99,7 +130,7 @@ const InstancedEventBubbles: React.FC<{ bubbles: EventBubble[] }> = ({ bubbles }
   const geometry = useMemo(() => new SphereGeometry(1, 16, 12), []);
   const material = useMemo(() => new MeshLambertMaterial({
     transparent: true,
-    opacity: 0.8
+    opacity: 0.7
   }), []);
   
   // Update instances every frame
@@ -117,9 +148,9 @@ const InstancedEventBubbles: React.FC<{ bubbles: EventBubble[] }> = ({ bubbles }
         ? 1 + Math.sin(time * 4 + bubble.pulseIntensity * 10) * 0.15 * bubble.pulseIntensity
         : 0.8;
       
-      // Floating motion
-      const floatY = Math.sin(time * 2 + bubble.position[0] * 0.01) * 3;
-      tempObject.position.y = bubble.position[2] + floatY;
+      // Floating motion (smaller amplitude to stay near floor)
+      const floatY = Math.sin(time * 2 + bubble.position[0] * 0.01) * 0.5;
+      tempObject.position.y = bubble.position[1] + floatY;
       
       tempObject.scale.setScalar(bubble.size * heartbeat);
       tempObject.updateMatrix();
@@ -150,24 +181,38 @@ const InstancedEventBubbles: React.FC<{ bubbles: EventBubble[] }> = ({ bubbles }
 
 const EventBubbles: React.FC<EventBubblesProps> = ({ bubbles }) => {
   const [selectedBubble, setSelectedBubble] = useState<EventBubble | null>(null);
+  const focusedFloor = useTower3DStore(state => state.focusedFloor);
+  
+  // Filter bubbles based on focused floor
+  const visibleBubbles = useMemo(() => {
+    if (focusedFloor === null) {
+      return bubbles; // Show all bubbles when no floor is focused
+    }
+    
+    // Calculate which floor each bubble belongs to based on its Y position
+    return bubbles.filter(bubble => {
+      const bubbleFloor = Math.floor(bubble.position[1] / TOWER_CONFIG.FLOOR_HEIGHT);
+      return bubbleFloor === focusedFloor;
+    });
+  }, [bubbles, focusedFloor]);
   
   // Use instanced rendering for performance when there are many bubbles
-  const useInstancedRendering = bubbles.length > 20;
+  const useInstancedRendering = visibleBubbles.length > 20;
   
   const handleBubbleClick = (bubble: EventBubble) => {
     setSelectedBubble(selectedBubble?.id === bubble.id ? null : bubble);
     console.log('Event bubble clicked:', bubble.title);
   };
   
-  if (bubbles.length === 0) return null;
+  if (visibleBubbles.length === 0) return null;
   
   return (
     <group>
       {useInstancedRendering ? (
-        <InstancedEventBubbles bubbles={bubbles} />
+        <InstancedEventBubbles bubbles={visibleBubbles} />
       ) : (
         // Individual bubbles for better interaction when count is low
-        bubbles.map(bubble => (
+        visibleBubbles.map(bubble => (
           <SingleEventBubble
             key={bubble.id}
             bubble={bubble}
@@ -177,7 +222,7 @@ const EventBubbles: React.FC<EventBubblesProps> = ({ bubbles }) => {
       )}
       
       {/* Particle effects for very active bubbles */}
-      {bubbles
+      {visibleBubbles
         .filter(b => b.impactScore > 0.8)
         .map(bubble => (
           <group key={`particles-${bubble.id}`} position={bubble.position}>
@@ -204,10 +249,10 @@ const EventBubbles: React.FC<EventBubblesProps> = ({ bubbles }) => {
       }
       
       {/* Connection lines for related events */}
-      {bubbles.length > 1 && (
+      {visibleBubbles.length > 1 && (
         <group>
-          {bubbles.slice(0, -1).map((bubble, i) => {
-            const nextBubble = bubbles[i + 1];
+          {visibleBubbles.slice(0, -1).map((bubble, i) => {
+            const nextBubble = visibleBubbles[i + 1];
             if (!nextBubble || bubble.eventType !== nextBubble.eventType) return null;
             
             const startPos = new Vector3(...bubble.position);

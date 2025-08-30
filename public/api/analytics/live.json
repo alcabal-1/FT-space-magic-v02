@@ -1,0 +1,26 @@
+{
+  "activeMembers": 247,
+  "activeEvents": 15,
+  "floors": {
+    "16": {
+      "activity": 0.95,
+      "mainEvent": "AI Safety Summit",
+      "participants": 85
+    },
+    "12": {
+      "activity": 0.75,
+      "mainEvent": "Robotics Lab Demo",
+      "participants": 42
+    },
+    "9": {
+      "activity": 0.65,
+      "mainEvent": "DeSci Meetup",
+      "participants": 31
+    }
+  },
+  "trending": [
+    "AI Workshop gaining momentum",
+    "Cross-floor collaboration detected",
+    "Peak activity on innovation floors"
+  ]
+}

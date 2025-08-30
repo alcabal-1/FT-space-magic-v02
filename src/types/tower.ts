@@ -42,6 +42,7 @@ export interface EventBubble {
   color: string;
   eventType: string;
   attendeeCount: number;
+  participants: number;
   impactScore: number;
   title: string;
   isActive: boolean;
@@ -59,16 +60,12 @@ export interface TowerState {
 
 export interface APIFloorPulse {
   floorId: string;
-  timestamp: string;
+  timestamp: number;
+  overallActivity: number;
   rooms: Record<string, {
     level: number;
-    timestamp: string;
+    trend: string;
   }>;
-  metadata: {
-    totalRooms: number;
-    averageActivity: number;
-    highActivityRooms: number;
-  };
 }
 
 export interface EventTypeColors {
@@ -87,7 +84,7 @@ export const EVENT_COLORS: EventTypeColors = {
 };
 
 export const TOWER_CONFIG = {
-  TOTAL_FLOORS: 16,
+  TOTAL_FLOORS: 18,
   FLOOR_HEIGHT: 50,
   BASE_FLOOR_SIZE: 600,
   CAMERA_DISTANCE: 800,

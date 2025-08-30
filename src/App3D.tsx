@@ -1,6 +1,9 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import Tower3D from './components/Tower3D'
+import HeaderUI from './components/HeaderUI'
+import WelcomeOverlay from './components/WelcomeOverlay'
+import LivingTitle from './components/LivingTitle'
 import './App.css'
 
 function App3D() {
@@ -9,6 +12,11 @@ function App3D() {
       {/* Background effects */}
       <div className="fixed inset-0 bg-gradient-to-br from-frontier-500/10 via-transparent to-frontier-700/10"></div>
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-frontier-400/10 via-transparent to-transparent"></div>
+      
+      {/* UI Overlays */}
+      <WelcomeOverlay />
+      <HeaderUI />
+      <LivingTitle />
       
       {/* Main content */}
       <div className="relative z-10 min-h-screen">

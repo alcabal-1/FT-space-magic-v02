@@ -4,10 +4,13 @@
  */
 
 import React, { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, extend } from '@react-three/fiber';
 import { Mesh, BoxGeometry, MeshLambertMaterial, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
+import { Text } from 'troika-three-text';
 import type { FloorData } from '../types/tower';
 import { TOWER_CONFIG } from '../types/tower';
+
+extend({ Text });
 
 interface FloorRendererProps {
   floor: FloorData;
@@ -15,10 +18,41 @@ interface FloorRendererProps {
   isFocused: boolean;
 }
 
+// Helper function to get floor names
+const getFloorName = (floorNumber: number): string => {
+  const floorNames = [
+    'CATACOMBS',      // F0
+    'LOBBY',          // F1  
+    'SPACESHIP',      // F2
+    'OFFICES',        // F3
+    'CO-LIVING',      // F4
+    'GYM',            // F5
+    'MAKERSPACE',     // F6
+    'MUSIC/ART',      // F7
+    'BIOTECH/NEUROTECH', // F8
+    'ACCELERATE',     // F9
+    'AI',             // F10
+    'LONGEVITY',      // F11
+    'CRYPTO',         // F12
+    null,             // F13 (skip)
+    'HUMAN FLOURISHING', // F14
+    'CO-WORKING',     // F15
+    'LOUNGE',         // F16
+    'ROOFTOP'         // F17
+  ];
+  
+  // Handle F13 skip
+  if (floorNumber === 13) return 'F13 (UNAVAILABLE)';
+  
+  const name = floorNames[floorNumber];
+  return name || `FLOOR ${floorNumber}`;
+};
+
 const FloorRenderer: React.FC<FloorRendererProps> = ({ floor, index, isFocused }) => {
   const meshRef = useRef<Mesh>(null);
   const edgesRef = useRef<LineSegments>(null);
   const roomRefs = useRef<(Mesh | null)[]>([]);
+  const labelRef = useRef<any>(null);
   
   const floorHeight = index * TOWER_CONFIG.FLOOR_HEIGHT;
   
@@ -92,6 +126,12 @@ const FloorRenderer: React.FC<FloorRendererProps> = ({ floor, index, isFocused }
       floorMaterial.opacity = floor.opacity * (0.1 + pulseIntensity);
     }
     
+    // Billboard the floor label
+    if (labelRef.current) {
+      labelRef.current.lookAt(state.camera.position);
+      labelRef.current.rotation.z = 0;
+    }
+    
     // Animate room activities
     roomRefs.current.forEach((roomMesh, i) => {
       if (roomMesh && roomMeshes[i]) {
@@ -155,17 +195,18 @@ const FloorRenderer: React.FC<FloorRendererProps> = ({ floor, index, isFocused }
         </group>
       ))}
       
-      {/* Floor label (only for focused floors) */}
-      {isFocused && (
-        <mesh position={[floorCenterX, floorHeight + 30, floorCenterY]}>
-          <planeGeometry args={[40, 12]} />
-          <meshBasicMaterial
-            color="#7c3aed"
-            transparent
-            opacity={0.8}
-          />
-        </mesh>
-      )}
+      {/* 3D Floor Label with Billboard */}
+      <group ref={labelRef} position={[floorCenterX - floorWidth/2 - 20, floorHeight + 5, floorCenterY]}>
+        <text
+          text={`F${floor.floor + 1}: ${getFloorName(floor.floor + 1).toUpperCase()}`}
+          fontSize={8}
+          color={isFocused ? '#ffffff' : '#94a3b8'}
+          anchorX="right"
+          anchorY="middle"
+          outlineWidth={0.3}
+          outlineColor="#000000"
+        />
+      </group>
     </group>
   );
 };

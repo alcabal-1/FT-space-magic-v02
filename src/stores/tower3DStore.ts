@@ -79,8 +79,8 @@ const createEventBubblesFromActivity = (
         roomId: room.id,
         position: [
           room.x + room.width / 2,
-          room.y + room.height / 2,
-          floorIndex * TOWER_CONFIG.FLOOR_HEIGHT + 20
+          floorIndex * TOWER_CONFIG.FLOOR_HEIGHT + 8,  // Y is height in 3D, positioned on floor surface
+          room.y + room.height / 2
         ] as [number, number, number],
         size: Math.max(
           TOWER_CONFIG.BUBBLE_BASE_SIZE,
@@ -89,8 +89,9 @@ const createEventBubblesFromActivity = (
         color: EVENT_COLORS[eventType] || EVENT_COLORS.General,
         eventType,
         attendeeCount,
+        participants: attendeeCount,
         impactScore: activity,
-        title: `${room.name} (${attendeeCount} people)`,
+        title: room.name,
         isActive: activity > 0.3,
         pulseIntensity: activity
       };
@@ -205,47 +206,77 @@ export const useTower3DStore = create<Tower3DStore>()(
     },
 
     loadRoomsData: async () => {
-      try {
-        const response = await fetch('/rooms.json');
-        if (!response.ok) throw new Error('Failed to load rooms data');
-        const data = await response.json();
-        set({ roomsData: data });
-        return data;
-      } catch (error) {
-        console.error('Error loading rooms data:', error);
-        // Fallback data for demo
-        const fallbackData = {
-          floor1: [
-            {
-              id: 'demo-room-1',
-              name: 'Innovation Lab',
-              x: 50, y: 100, width: 120, height: 80,
-              capacity: 12, activityHeat: 0.7
-            },
-            {
-              id: 'demo-room-2',
-              name: 'AI Workshop',
-              x: 200, y: 100, width: 100, height: 60,
-              capacity: 8, activityHeat: 0.5
-            }
-          ]
-        };
-        set({ roomsData: fallbackData });
-        return fallbackData;
+      // Use mock data for all floors
+      const mockRoomsData: Record<string, Room[]> = {};
+      
+      // Generate rooms for each floor
+      for (let floor = 1; floor <= TOWER_CONFIG.TOTAL_FLOORS; floor++) {
+        const rooms: Room[] = [];
+        const roomsPerFloor = 3 + Math.floor(Math.random() * 3);
+        
+        for (let room = 0; room < roomsPerFloor; room++) {
+          const floorTypes = [
+            ['Underground Vault', 'Storage Room', 'Archive'],  // F0: Catacombs
+            ['Reception', 'Welcome Desk', 'Information Hub'],   // F1: Lobby
+            ['Launch Pad', 'Mission Control', 'Space Sim'],     // F2: Spaceship
+            ['Meeting Room', 'Office Suite', 'Conference'],     // F3: Offices
+            ['Living Space', 'Kitchen', 'Common Area'],         // F4: Co-living
+            ['Fitness Center', 'Yoga Studio', 'Sports Court'],  // F5: Gym
+            ['Workshop', 'Tool Lab', 'Prototype Zone'],         // F6: Makerspace
+            ['Recording Studio', 'Gallery', 'Performance'],     // F7: Music/Art
+            ['Biolab', 'Neuro Research', 'Life Sciences'],      // F8: Biotech/Neurotech
+            ['Startup Hub', 'Accelerator', 'Demo Room'],        // F9: Accelerate
+            ['AI Lab', 'ML Studio', 'Neural Net Center'],       // F10: AI
+            ['Longevity Lab', 'Health Research', 'Med Tech'],   // F11: Longevity
+            ['Trading Floor', 'Crypto Lab', 'Blockchain Hub'],  // F12: Crypto
+            ['Reserved Space', 'Private Room', 'Exclusive'],    // F13: (skip but handle)
+            ['Wellness Center', 'Meditation', 'Therapy Room'],  // F14: Human Flourishing
+            ['Co-working Space', 'Hot Desk', 'Team Room'],     // F15: Co-working
+            ['Social Lounge', 'Cafe', 'Relaxation Zone'],      // F16: Lounge
+            ['Rooftop Terrace', 'Sky Garden', 'Event Space']   // F17: Rooftop
+          ];
+          
+          const floorType = floorTypes[floor - 1] || floorTypes[0];
+          const roomName = floorType[room % floorType.length];
+          
+          rooms.push({
+            id: `floor${floor}-room-${room + 1}`,
+            name: roomName,
+            x: -200 + (room % 3) * 150,
+            y: -200 + Math.floor(room / 3) * 150,
+            width: 80 + Math.random() * 40,
+            height: 80 + Math.random() * 40,
+            capacity: 10 + Math.floor(Math.random() * 40),
+            activityHeat: Math.random() * 0.9
+          });
+        }
+        
+        mockRoomsData[`floor${floor}`] = rooms;
       }
+      
+      set({ roomsData: mockRoomsData });
+      return mockRoomsData;
     },
 
     fetchFloorPulse: async (floorId) => {
-      try {
-        const response = await fetch(`http://localhost:8001/api/floors/${floorId}/pulse`);
-        if (!response.ok) throw new Error('Failed to fetch floor pulse');
-        const data: APIFloorPulse = await response.json();
-        
-        get().updateFloorActivity(floorId, data);
-      } catch (error) {
-        console.error('Error fetching floor pulse:', error);
-        // Continue with existing data
-      }
+      // Simulate floor pulse with mock data
+      const floorNumber = parseInt(floorId.replace('floor', ''));
+      const rooms = get().roomsData[floorId] || [];
+      
+      const mockPulseData: APIFloorPulse = {
+        floorId,
+        timestamp: Date.now(),
+        overallActivity: 0.5 + Math.random() * 0.5,
+        rooms: rooms.reduce((acc, room) => {
+          acc[room.id] = {
+            level: Math.min(1, Math.max(0, room.activityHeat + (Math.random() - 0.5) * 0.2)),
+            trend: Math.random() > 0.5 ? 'up' : 'stable'
+          };
+          return acc;
+        }, {} as Record<string, { level: number; trend: string }>)
+      };
+      
+      get().updateFloorActivity(floorId, mockPulseData);
     },
 
     startRealTimeUpdates: () => {
